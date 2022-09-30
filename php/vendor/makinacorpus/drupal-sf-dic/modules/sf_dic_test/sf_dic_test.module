@@ -1,0 +1,35 @@
+<?php
+/**
+ * @file
+ * Yes, it is a Drupal module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function sf_dic_test_menu() {
+  $items = [];
+
+  $items['test/form/implements'] = [
+    'page callback'     => 'sf_dic_page_form',
+    'page arguments'    => ['MakinaCorpus\Drupal\Sf\Tests\Mockup\FormImplements', "42"],
+    'access callback'   => true,
+    'type'              => MENU_CALLBACK,
+  ];
+
+  $items['test/form/extends'] = [
+    'page callback'     => 'sf_dic_page_form',
+    'page arguments'    => ['MakinaCorpus\Drupal\Sf\Tests\Mockup\FormExtends', 'foo'],
+    'access callback'   => true,
+    'type'              => MENU_CALLBACK,
+  ];
+
+  return $items;
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function sf_dif_test_node_access($node, $op, $account) {
+  // Those are our use cases from the SecurityTest case.
+}

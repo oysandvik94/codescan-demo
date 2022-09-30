@@ -1,0 +1,20 @@
+<?php
+
+// This option temporarily disables the user alias functionality.
+// Use it when the users database server is in maintenance mode or something like that.
+// You can set it to TRUE/FALSE
+$config['ua_disabled'] = false;
+
+// Database connection string
+$config['ua_dsn'] = 'mysql://_USER_:_PASSWORD_@localhost/postfix';
+
+// Query for select email for alias
+$config['ua_query_user_alias'] = 'SELECT goto FROM alias WHERE active=1 AND address=? LIMIT 1';
+
+// Use domain alias from Postfix
+$config['ua_use_domain_alias'] = true;
+
+// Query for select email for domain alias
+$config['ua_query_domain_alias'] = 'SELECT target_domain FROM alias_domain WHERE active=1 AND alias_domain=? LIMIT 1';
+
+?>

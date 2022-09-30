@@ -1,0 +1,30 @@
+{
+    "name": "alfnru/user_alias",
+    "type": "roundcube-plugin",
+    "description": "Plugin allows users to log in using aliases (user and/or domain) from Postfix",
+    "version": "1.1",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://github.com/AlfnRU/roundcube-user_alias/",
+    "authors": [
+        {
+            "name": "Alexander Alferov",
+            "email": "a@alfn.ru",
+            "role": "Developer"
+        }
+    ],
+    "keywords": [
+        "login",
+        "authentication",
+        "security",
+        "alias"
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://plugins.roundcube.net"
+        }
+    ],
+    "require": {
+        "roundcube/plugin-installer": ">=0.1.6"
+    }
+}

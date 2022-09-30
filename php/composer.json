@@ -1,0 +1,15 @@
+{
+    "require": {
+        "symfony/polyfill-ctype": "^1.26",
+        "alfnru/user_alias": "^1.1",
+        "kabel-liujun/auth": "^1.5",
+        "makinacorpus/drupal-gulpifier": "^1.0",
+        "makinacorpus/drupal-ulink": "^2.1",
+        "makinacorpus/drupal-usync": "^1.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "roundcube/plugin-installer": false
+        }
+    }
+}

@@ -1,0 +1,23 @@
+services:
+
+  acl.security.acl.voter:
+    public: false
+    class: MakinaCorpus\Drupal\Sf\Security\Voter\DrupalAclVoter
+    arguments: ['@php_acl.manager']
+    tags: [{name: security.voter}]
+
+  # This is a very specific implementation of the ACL voter that will run the
+  # 'node_access' Drupal hook, but ignoring the 'sf_acl' module in order to
+  # to avoid running twice.
+  acl.security.node_access.voter:
+    public: false
+    class: MakinaCorpus\Drupal\Sf\Security\Voter\DrupalNodeAccessVoter
+    tags: [{name: security.voter}]
+
+  # Decorate the authorization checker in order to be able to pass a drupal
+  # account as an additional parameter to the isGranted() method
+  acl.security.authorization_checker:
+    public: false
+    decorates: security.authorization_checker
+    class: MakinaCorpus\Drupal\Sf\Security\Authorization\TokenAwareAuthorizationChecker
+    arguments: ['@acl.security.authorization_checker.inner', '@security.access.decision_manager']

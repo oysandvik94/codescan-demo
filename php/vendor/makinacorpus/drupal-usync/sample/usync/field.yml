@@ -1,0 +1,38 @@
+body:
+  name: Body
+  type: text_with_summary
+  keep: all
+
+field_image:
+  name: Image
+  type: image
+  keep: all
+
+image_cover:
+  name: "Cover image"
+  dirty: true
+  type: image
+  # cardinality: 1  # 1 is the default
+  
+image_gallery:
+  inherit: image_cover
+  name: "Gallery"
+  cardinality: -1
+
+abstract:
+  name: "Abstract for lists"
+  type: text_long
+
+category:
+  type: taxonomy_term_reference
+  label: "Category"
+  cardinality: -1
+  # Widget settings
+  widget:
+    settings:
+      allowed_values:
+        vocabulary: category
+
+text:
+  name: "Text"
+  type: paragraph

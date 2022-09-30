@@ -1,0 +1,25 @@
+{
+    "name": "makinacorpus/drupal-usync",
+    "type": "drupal-module",
+    "description": "Drupal features-like configuration file driven synchronization module",
+    "keywords": [],
+    "homepage": "http://github.com/makinacorpus/drupal-usync",
+    "license": "GPL-2",
+    "authors": [
+        {
+            "name": "Pierre Rineau",
+            "email": "pierre.rineau@makina-corpus.com"
+        },
+        {
+            "name": "Makina Corpus",
+            "homepage": "http://makina-corpus.com"
+        }
+    ],
+    "autoload": {
+        "psr-0": { "USync\\": "src" }
+    },
+    "minimum-stability": "dev",
+    "require": {
+        "symfony/yaml": "*"
+    }
+}

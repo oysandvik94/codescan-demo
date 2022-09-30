@@ -1,0 +1,97 @@
+<?php
+/**
+ * @file
+ * Simple makinacorpus/php-acl integration.
+ *
+ * Making Drupal aware of your own permissions:
+ *
+ *   - ACL manager live its own life without carrying about node_access;
+ *     we don't need it to be aware that it even exists, it handles its
+ *     own set of permissions and business logic;
+ *
+ *   - on node acquire grants, we implement a converter that spits ACE
+ *     into the node_access table by converting profile (type, id) as
+ *     (realm, gid) into Drupal terminology;
+ *
+ *   - on node grants (user grants) we do inject the collected user
+ *     profiles by converting profiles (type, id) as (realm, gid) into
+ *     Drupal terminology.
+ *
+ * This works gracefully and all Drupal-driven access checks are done
+ * transparently using our ACL.
+ *
+ * Now, we have to also provide a bridge the other way around, node access
+ * checks via our API must also be aware of Drupal own node_access system:
+ *
+ *   - a specific voter with a very low priority will run after all the
+ *     others, and use the node_access() function for the only three
+ *     'update', 'view' and 'delete' permissions that core supports;
+ *
+ * That's it, it should work.
+ */
+
+use MakinaCorpus\ACL\Manager;
+
+/**
+ * Internal helper, please do not use it.
+ *
+ * @return Manager
+ */
+function _sf_acl_manager() {
+  return \Drupal::service('php_acl.manager');
+}
+
+/**
+ * Procedural proxy to Manager::isGranted() method.
+ */
+function sf_acl_is_granted($permission, $resource = null, $profile = null) {
+  if (!$profile) {
+    $profile = \Drupal::currentUser();
+  }
+  $container = \Drupal::getContainer();
+  if ($container->has('security.authorization_checker')) {
+    return $container->get('security.authorization_checker')->isGranted($permission, $resource, $profile);
+  } else {
+    return $container->get('php_acl.manager')->isGranted($permission, $resource, $profile);
+  }
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function sf_acl_node_access($node, $op, $account) {
+  switch (_sf_acl_manager()->vote($account, $node, $op)) {
+    case Manager::ALLOW:
+      return NODE_ACCESS_ALLOW;
+    case Manager::DENY:
+      return NODE_ACCESS_DENY;
+    default:
+      return NODE_ACCESS_IGNORE;
+  }
+}
+
+/**
+ * Implements hook_node_access_records().
+ *
+ * Basically converts ACL/ACE to node_access records.
+ */
+function sf_acl_node_access_records($node) {
+  /** @var \MakinaCorpus\ACL\Bridge\Drupal\EntryToNodeAccessConverter $converter */
+  $converter = \Drupal::service('php_acl.drupal.entry_to_node_access_converter');
+  return $converter->convertEntryList(_sf_acl_manager()->collectEntryListAll($node));
+}
+
+/**
+ * Empty implementation of hook_node_grants().
+ *
+ * Basically converts Profile sets to user grants.
+ */
+function sf_acl_node_grants($account, $op) {
+  $ret = [];
+  foreach (_sf_acl_manager()->collectProfiles($account)->toArray() as $type => $ids) {
+    foreach ($ids as $id) {
+      $ret[$type][] = $id;
+    }
+  }
+  return $ret;
+}

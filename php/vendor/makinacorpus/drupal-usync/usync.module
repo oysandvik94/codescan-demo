@@ -1,0 +1,215 @@
+<?php
+/**
+ * @file
+ * µSync module.
+ */
+
+use USync\Context;
+use USync\TreeBuilding\GraphBuilder;
+use USync\Loading\Loader;
+
+/**
+ * View mode variable nae.
+ */
+const USYNC_VAR_VIEW_MODE = 'usync_view_mode';
+
+/**
+ * Load the composer autoload, be flexible about it, it might be elsewhere.
+ */
+@include_once __DIR__ . '/vendor/autoload.php';
+
+/**
+ * Load compatibility layer with other modules.
+ */
+require_once __DIR__ . '/usync.compat.inc';
+
+/**
+ * Implements hook_hook_info().
+ */
+function usync_hook_info() {
+  return [
+    'usync_loader_list_alter' => [
+      'group' => 'usync',
+    ],
+    'usync_path_map' => [
+      'group' => 'usync',
+    ],
+    'usync_path_map_alter' => [
+      'group' => 'usync',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function usync_entity_info_alter(&$entity_info) {
+  // @todo Export other entity options.
+  // Export view modes we found during synchronization.
+  foreach (variable_get(USYNC_VAR_VIEW_MODE, array()) as $entity_type => $view_modes) {
+    if (isset($entity_info[$entity_type])) {
+      // @todo Add a "strict" mode that disables all other view modes.
+      foreach ($view_modes as $name => $label) {
+        // If the view mode is not already created by another module
+        if (!isset($entity_info[$entity_type]['view modes'][$name])) {
+          // Declare it but without being required by default
+          $entity_info[$entity_type]['view modes'][$name] = array(
+            'label' => $label,
+            'custom settings' => false
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Fetch all known loader instances.
+ *
+ * @return \USync\Loading\LoaderInterface[]
+ */
+function usync_loader_list() {
+
+  // Core loaders
+  $instanceLoader = new \USync\Loading\FieldInstanceLoader();
+  $loaders = [
+    new \USync\Loading\InputFilterLoader(),
+    new \USync\Loading\ImageStyleLoader(),
+    new \USync\Loading\FieldLoader($instanceLoader),
+    new \USync\Loading\MenuItemLoader(),
+    new \USync\Loading\GenericEntityLoader(),
+    new \USync\Loading\NodeEntityLoader(),
+    $instanceLoader,
+    new \USync\Loading\RoleLoader(),
+    new \USync\Loading\ViewModeLoader(),
+    new \USync\Loading\VariableLoader(),
+    new \USync\Loading\VocabularyEntityLoader(),
+  ];
+
+  if (module_exists('menu')) {
+    $loaders[] = new \USync\Loading\MenuLoader();
+  }
+  elseif(module_exists('umenu')) {
+    if (class_exists('MakinaCorpus\\Umenu\\DrupalMenuStorage')) {
+      $loaders[] = new \USync\Loading\UMenu1Loader(umenu_get_storage());
+    } else {
+      $loaders[] = new \USync\Loading\UMenu2Loader(umenu_get_storage());
+    }
+  }
+
+  if ($moduleLoaders = module_invoke_all(__FUNCTION__)) {
+    $loaders = array_merge($moduleLoaders, $loaders);
+  }
+  drupal_alter(__FUNCTION__, $loaders);
+
+  // Allow loaders to set up the environment.
+  foreach ($loaders as $loader) {
+    /* @var $loader \USync\Loading\LoaderInterface */
+    $loader->init();
+  }
+
+  return $loaders;
+}
+
+/**
+ * @deprecated
+ */
+function usync_run($module, $sources = null, $patterns = null, $partial = false) {
+
+  $parsed = [];
+
+  if ($sources) {
+    if (!is_array($sources)) {
+      $sources = [$sources];
+    }
+    foreach ($sources as $target) {
+      $parsed[] = $module . ':' . $target;
+    }
+  } else {
+    $parsed[] = $module . ':';
+  }
+
+  return usync_run_sources($parsed, $patterns, $partial);
+}
+
+/**
+ * Alter-ego of usync_run_sources() allowing data loss
+ */
+function usync_run_with_data_loss_allowed($sources = null, $patterns = null, $partial = false) {
+
+  if ($sources && !is_array($sources)) {
+    $sources = [$sources];
+  }
+  if ($patterns && !is_array($patterns)) {
+    $patterns = [$patterns];
+  }
+
+  $tx = null;
+
+  try {
+    $tx = db_transaction();
+
+    $context = (new GraphBuilder($sources))->build();
+    $context->setBreakOn(Context::BREAK_FORCE);
+
+    (new Loader())->loadAll($context, $patterns, $partial);
+
+    unset($tx); // Explicit commit.
+
+  } catch (\Exception $e) {
+    if ($tx) {
+      try {
+        $tx->rollback();
+      } catch (Exception $e2) {}
+    }
+    throw $e;
+  }
+}
+
+/**
+ * Run sync.
+ *
+ * You may call this during your updates, it does work.
+ *
+ * Synchronization is embeded into a transaction but please be aware that any
+ * DDL operations (table alteration mostly) won't be rollbacked.
+ *
+ * @param string $module
+ *   The module for which to get the graph.
+ * @param string[] $sources
+ *   List of module declared source names you want to join into this graph.
+ * @param string|string[] $pathes
+ *   Can be null, a single pattern or an array of patterns to match
+ * @param string $partial
+ *   Please ignore this parameter for now.
+ * @param bool $force
+ *   Allow data breaking changes (use it wisely)
+ */
+function usync_run_sources($sources = null, $patterns = null, $partial = false) {
+
+  if ($sources && !is_array($sources)) {
+    $sources = [$sources];
+  }
+  if ($patterns && !is_array($patterns)) {
+    $patterns = [$patterns];
+  }
+
+  $tx = null;
+
+  try {
+    $tx = db_transaction();
+
+    $context = (new GraphBuilder($sources))->build();
+    (new Loader())->loadAll($context, $patterns, $partial);
+
+    unset($tx); // Explicit commit.
+
+  } catch (\Exception $e) {
+    if ($tx) {
+      try {
+        $tx->rollback();
+      } catch (Exception $e2) {}
+    }
+    throw $e;
+  }
+}

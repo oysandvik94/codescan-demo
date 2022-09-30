@@ -1,0 +1,175 @@
+<?php
+/**
+ * @file
+ * µLink module.
+ */
+
+use Drupal\Core\Form\FormState;
+
+use MakinaCorpus\ULink\Controller\DialogController;
+use MakinaCorpus\ULink\EntityLinkFilter;
+use MakinaCorpus\ULink\EntityLinkGenerator;
+
+/**
+ * Field API needs this.
+ */
+require_once __DIR__ . '/ulink.field.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function ulink_menu() {
+  $items = [];
+
+  $items['ulink/dialog'] = [
+    'page callback'     => 'sf_dic_page',
+    'page arguments'    => [DialogController::class . '::dialog'],
+    'access arguments'  => ['access content'],
+  ];
+  $items['ulink/search'] = [
+    'page callback'     => 'sf_dic_page',
+    'page arguments'    => [DialogController::class . '::search'],
+    'access arguments'  => ['access content'],
+  ];
+
+  return $items;
+}
+
+/**
+ * Generate URI from given internal regex
+ *
+ * @param string $uri
+ * @param boolean $raiseExceptions
+ *
+ * @return string
+ */
+function ulink_get_path($uri, $raiseExceptions = false) {
+
+  // Sad and ugly performance optimization
+  if (!EntityLinkGenerator::URIIsCandidate($uri)) {
+    if ($raiseExceptions) {
+      throw new \Exception();
+    }
+    return;
+  }
+
+  try {
+    /** @var \MakinaCorpus\ULink\EntityLinkGenerator $generator */
+    $generator = \Drupal::service('ulink.entity_link_generator');
+    return $generator->getEntityPathFromURI($uri);
+  } catch (\Exception $e) {
+    if ($raiseExceptions) {
+      throw $e;
+    }
+  }
+}
+
+/**
+ * Implements hook_url_outbound_alter().
+ */
+function ulink_url_outbound_alter(&$path, &$options, $original_path) {
+  if ($path && $original_path && !$options['external']) {
+    $generated = ulink_get_path($original_path);
+    if ($generated) {
+      $path = $generated;
+    }
+  }
+}
+
+/**
+ * Implements hook_ckeditor_plugin().
+ */
+function ulink_ckeditor_plugin() {
+  return [
+    'ulink' => [
+      'name' => 'ulink',
+      'desc' => t("µLink entity selector"),
+      'path' => drupal_get_path('module', 'ulink') . '/js/ckeditor/',
+      'buttons' => [
+        'ulink' => [
+          'label' => t("Link content"),
+          'icon'  => 'icons/ulink.png',
+        ],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function ulink_element_info_alter(&$types) {
+  // Used when using ckeditor module.
+  if (isset($types['text_format']['#pre_render']) && is_array($types['text_format']['#pre_render'])) {
+    if (in_array('ckeditor_pre_render_text_format', $types['text_format']['#pre_render'])) {
+      $types['text_format']['#attached']['library'][] = ['ulink', 'dialog'];
+    }
+  }
+}
+
+/**
+ * Implements hook_library().
+ */
+function ulink_library() {
+  return [
+    'dialog' => [
+      'title'   => 'µLink',
+      'website' => 'http://github.com/makinacorpus/ulink',
+      'version' => '0.1',
+      'js' => [
+        drupal_get_path('module', 'ulink') . '/js/better-autocomplete/better-autocomplete.js' => [],
+        drupal_get_path('module', 'ulink') . '/js/ulink.js' => [],
+      ],
+      'css' => [
+        drupal_get_path('module', 'ulink') . '/js/better-autocomplete/better-autocomplete.css' => [],
+      ],
+      'dependencies' => [
+        ['system', 'drupal.ajax'],
+        ['system', 'ui.dialog'],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_filter_info().
+ */
+function ulink_filter_info() {
+  return [
+    'ulink_entity' => [
+      'title'             => t('Does some linking'),
+      'description'       => t('Will process anything like entity://TYPE/ID where TYPE is an entity type and ID is an entity identifier and convert it to link'),
+      'prepare callback'  => 'ulink_filter_prepare',
+      'process callback'  => 'ulink_filter_process',
+      'settings callback' => 'ulink_filter_settings',
+      'default settings'  => [],
+      // It is highly possible that some entities carry circular references
+      // references;  text_field_load() will do circular node_load() or
+      // entity_load() calls and create infinite loop recursions, until we
+      // didn't fix this problem, we need to disable caching in order to
+      // disable text_field_load() sanitizing upon field data load.
+      'cache'             => (bool)variable_get('ulink_unsafe_text_caching', false),
+    ],
+  ];
+}
+
+/**
+ * Implements callback_filter_prepare().
+ */
+function ulink_filter_prepare($text, $filter, $format, $langcode) {
+  return sf_dic_plugin_create(EntityLinkFilter::class, (array)$filter)->prepare($text, $langcode);
+}
+
+/**
+ * Implements callback_filter_process().
+ */
+function ulink_filter_process($text, $filter, $format, $langcode) {
+  return sf_dic_plugin_create(EntityLinkFilter::class, (array)$filter)->process($text, $langcode)->getProcessedText();
+}
+
+/**
+ * Implements callback_filter_settings().
+ */
+function ulink_filter_settings($form, &$form_state, $filter) {
+  return sf_dic_plugin_create(EntityLinkFilter::class, (array)$filter)->settingsForm($form, new FormState($form_state));
+}

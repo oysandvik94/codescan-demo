@@ -1,0 +1,35 @@
+article:
+
+  teaser:
+    dirty: true
+    image_cover:
+      type: image
+      settings:
+        image_style: cover_teaser
+
+  full:
+    dirty: true
+    image_cover:
+      type: image
+      settings:
+        image_style: cover_full
+    text: true
+
+news:
+
+  teaser:
+    dirty: true
+    image_cover:
+      type: image
+      settings:
+        image_style: cover_teaser
+    abstract: true
+
+  full:
+    dirty: true
+    image_cover:
+      type: image
+      settings:
+        image_style: cover_full
+    abstract: true
+    text: true

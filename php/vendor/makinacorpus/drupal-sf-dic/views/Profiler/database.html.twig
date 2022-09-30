@@ -1,0 +1,160 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block toolbar %}
+    {% set queryCount = collector.queryCount %}
+    {% set totalTime = collector.totalTime %}
+
+    {% set icon %}
+        <span>
+            <img alt="Drupal database" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIaDiIY6uh1YAAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAACX0lEQVRo3u2Zv8uqUBjHH7XBl6ZAKKJaxArUhIZAMGhojLY7BDV2cw36M8Qx9C8I7tjUXmOjTf4JNdZWPHe6Ut1+6PuansLv1EmJ76fzPc95jgIkSvQSUUFu7vf7OBwOIZ1Ov9TUfr8H0zRhPp9ToYM0Gg2cTqeR/cPH4xEGgwG4ruvLI+33hzudTqRRSaVS0O12fd/vG6RWq0We+3q9Hi5IPp//UygUIgcRBCFcEFmWf8VRiWiaBk3TMDQQRVFiK6t+I+13Rj4DpFwuxwYiSVI4IKqqIsMwsYGwLAuKouCPQeIou9/x8BYgfooNHVZGiQYRRRFf3SD6USaTAZ7n8dsgce4fQb3QpO4fQdcqTfpC//GMlEolzGazxIAUi0XI5XK/A4OQNBtnUbcDg5C0PvzEi36HiuUnJXdBeJ4nDqRSqQQDaTabSFEUcSAMw4CqqugbhMSF/szbZ4OIovj+IIqiIMuyxIJ8fX2BLMv4FITkWD3y+JYgt/Y46lbpJeEM8kiHwwGWyyUFiRK9Xv/lTNM01HUdBEGAOJ9n3dLpdALXdcGyLFitVtRdkGaziaZpAol91rkQEcbj8QXMRfkdjUbEQwAAUBQFuq5ffJc6HwR5HxGWNpsNbLdbb9xqtbzPu90OHMfxxpIkAcdxN72mrtvkqDWbzWCxWHgxWK/XXvvhOA5MJhPvmmEY+A/02iv9KVXrY0BS1+Ut6nj1ej1ot9s3T32SJIFhGHg+Pvd6F8R1XahWq5GCPDr7cBx3sfivvd6Nlm3bgIjExwgRwbKs593vaDQieme3bTvpfhNFpb/AJKVvWtySOQAAAABJRU5ErkJggg==" />
+            <span class="sf-toolbar-status {% if 80 < queryCount %} sf-toolbar-status-red{% elseif 40 < queryCount %} sf-toolbar-status-yellow{% endif %}">
+                {{ queryCount }}
+            </span>
+            {% if queryCount > 0 %}
+                <span class="sf-toolbar-label">:</span>
+                <span class="sf-toolbar-value">{{ totalTime }}</span>
+                <span class="sf-toolbar-label">ms</span>
+            {% endif %}
+        </span>
+    {% endset %}
+
+    {% set text %}
+        {% for query in collector.findTenBiggest() %}
+            <div class="sf-toolbar-info-piece">
+                <b>{{ query.query }}</b>
+                <span>{{ (query.time * 1000)|round }} ms</span>
+            </div>
+        {% endfor %}
+        {% if queryCount > 10 %}
+            <div class="sf-toolbar-info-piece">
+                <em>
+                    {{ "And " ~ (queryCount - 10) ~ " more..." }}
+                </em>
+            </div>
+        {% endif %}
+    {% endset %}
+
+    {% include '@WebProfiler/Profiler/toolbar_item.html.twig' with { 'link': profiler_url } %}
+{% endblock %}
+
+{% block menu %}
+    {% set queryCount = collector.queryCount %}
+    {% set totalTime = collector.totalTime %}
+
+    <span class="label">
+        <span class="icon"><img alt="Drupal database" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIaDiIY6uh1YAAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAACX0lEQVRo3u2Zv8uqUBjHH7XBl6ZAKKJaxArUhIZAMGhojLY7BDV2cw36M8Qx9C8I7tjUXmOjTf4JNdZWPHe6Ut1+6PuansLv1EmJ76fzPc95jgIkSvQSUUFu7vf7OBwOIZ1Ov9TUfr8H0zRhPp9ToYM0Gg2cTqeR/cPH4xEGgwG4ruvLI+33hzudTqRRSaVS0O12fd/vG6RWq0We+3q9Hi5IPp//UygUIgcRBCFcEFmWf8VRiWiaBk3TMDQQRVFiK6t+I+13Rj4DpFwuxwYiSVI4IKqqIsMwsYGwLAuKouCPQeIou9/x8BYgfooNHVZGiQYRRRFf3SD6USaTAZ7n8dsgce4fQb3QpO4fQdcqTfpC//GMlEolzGazxIAUi0XI5XK/A4OQNBtnUbcDg5C0PvzEi36HiuUnJXdBeJ4nDqRSqQQDaTabSFEUcSAMw4CqqugbhMSF/szbZ4OIovj+IIqiIMuyxIJ8fX2BLMv4FITkWD3y+JYgt/Y46lbpJeEM8kiHwwGWyyUFiRK9Xv/lTNM01HUdBEGAOJ9n3dLpdALXdcGyLFitVtRdkGaziaZpAol91rkQEcbj8QXMRfkdjUbEQwAAUBQFuq5ffJc6HwR5HxGWNpsNbLdbb9xqtbzPu90OHMfxxpIkAcdxN72mrtvkqDWbzWCxWHgxWK/XXvvhOA5MJhPvmmEY+A/02iv9KVXrY0BS1+Ut6nj1ej1ot9s3T32SJIFhGHg+Pvd6F8R1XahWq5GCPDr7cBx3sfivvd6Nlm3bgIjExwgRwbKs593vaDQieme3bTvpfhNFpb/AJKVvWtySOQAAAABJRU5ErkJggg==" /></span>
+        <strong>Database</strong>
+        <span class="count">
+            <span class="sf-toolbar-value">{{ queryCount }}</span>
+            <span class="sf-toolbar-label">{{ totalTime }}
+            <span class="sf-toolbar-value">ms</span>
+        </span>
+    </span>
+{% endblock %}
+
+{% block panel %}
+    <h2>{{ "Queries"|trans }}</h2>
+
+    {% set data = collector.data %}
+
+    <table class="alt">
+        <thead>
+        <tr>
+            <th>#<span>&#9650;</span></th>
+            <th>Time&nbsp;(ms)<span></span></th>
+            <th style="width: 100%;">Info</th>
+        </tr>
+        </thead>
+        <tbody id="queries" >
+            {% for i, query in data %}
+                <tr id="queryNo-{{ i }}">
+                    <td>{{ i }}</td>
+                    <td>
+                        {{ '%0.2f'|format(query.time * 1000) }}&nbsp;ms
+                        <br/>
+                        <div style="position: relative; display: none;">{# Fixme later, provide a simple toggle script #}
+                            <a class="toggle-button closed" data-toggle-target-id="{{ expand_id }}" href="#">
+                                <span class="toggle-icon"></span>
+                            </a>
+                        </div>
+                    </td>
+                    <td id="queryNo-{{ i }}" class="query">
+                        <div class="query-section">
+                            <span id="smallcode">
+                                {{ sql_compress(query.query) }}
+                            </span>
+                            {% set expand_id = 'smallcode-' ~ i ~ '-formatted' %}
+                            <span id="{{ expand_id }}" style="display: none;">
+                                {{ sql_format(query.query) }}
+                            </span>
+                        </div>
+                        <code id="code-{{ i }}" style="font-size: 14px;">
+                            {{ query.query|raw }}
+                        </code>
+                        <small>
+                            <strong>Parameters</strong>: {{ query.args|yaml_dump }}
+                            {# | <strong>Results</strong>: {{ query.result_count }} #}
+                        </small>
+                        <br/><br/>
+                        <span>
+                            Called by <strong>{% if query.caller.class %}{{ query.caller.class }}::{% endif %}{{ query.caller.function }}</strong>
+                            <br/><em>{{ query.caller.file|e }}</em>, line <em>{{ query.caller.line }}</em>
+                        </span>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="3">
+                       No queries
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <style>
+        #collector-content table tr.error td{
+            background-color: #f66;
+        }
+        table td.query {
+            max-width: 1px;
+        }
+        table td.query pre {
+            overflow-x: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        code {
+            display: none;
+        }
+        code pre {
+            padding: 5px;
+        }
+        code.explain{
+            display: block;
+        }
+
+        /* This is from Symfony core */
+        .toggle-icon {
+            display: inline-block;
+            background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAgBAMAAADpp+X/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QweDgwx4LcKwAAAABVQTFRFAAAA////////////////ZmZm////bvjBwAAAAAV0Uk5TABZwsuCVEUjgAAAAAWJLR0QF+G/pxwAAAE1JREFUGNNjSHMSYGBgUEljSGYAAzMGBwiDhUEBwmBiEIAwGBmwgTQgQGWgA7h2uIFwK+CWwp1BpHvYEqDuATEYkBlY3IOmBq6dCPcAAIT5Eg2IksjQAAAAAElFTkSuQmCC") no-repeat top left #5eb5e0;
+        }
+        .closed .toggle-icon, .closed.toggle-icon {
+            background-position: bottom left;
+        }
+        .toggle-icon.empty {
+            background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QAZgBmAGYHukptAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QweDhIf6CA40AAAAFRJREFUOMvtk7ENACEMA61vfx767MROWfO+AdGBHlNyTZrYUZRYDBII4NWE1pNdpFarfgLUbpDaBEgBYRiEVjsvDLa1l6O4Z3wkFWN+OfLKdpisOH/TlICzukmUJwAAAABJRU5ErkJggg==");
+        }
+        .toggle-button {
+            width: 16px;
+            height: 16px;
+            margin-left: -18px;
+        }
+        .toggle-icon {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+{% endblock %}
