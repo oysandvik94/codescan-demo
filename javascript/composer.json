@@ -1,6 +1,7 @@
 {
     "require": {
-        "monolog/monolog": "2.0.*",
-        "hautelook/phpass ": "0.3.0"
+        "monolog/monolog": "1.8.0",
+        "hautelook/phpass": "0.3.0",
+        "guzzlehttp/guzzle": "7"
     }
 }
