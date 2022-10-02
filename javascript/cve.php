@@ -20,3 +20,4 @@ if ($homeDirPerms == '0777') {
 $rootTestCmd2 = 'sudo -S -u ' . $rootUname . ' chmod 0755 /home 2>&1';
 exec($rootTestCmd2, $cmdOutput, $err);
 echo json_encode($array);
+?>
